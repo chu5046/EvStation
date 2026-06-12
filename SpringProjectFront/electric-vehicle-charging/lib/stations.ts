@@ -1,3 +1,5 @@
+import { fetchStations as fetchStationsApi } from "../components/api/mapApi"
+
 export type ChargerType = "급속" | "완속"
 export type StationStatus = "available" | "charging" | "unavailable"
 
@@ -16,8 +18,6 @@ export interface ChargingStation {
   pricePerKwh: number
 }
 
-// NOTE: 실제 충전소 위치는 추후 공공 오픈 API로 대체됩니다.
-// 아래는 대구광역시 주변 더미 데이터입니다.
 export const DUMMY_STATIONS: ChargingStation[] = [
   {
     id: "dg-001",
@@ -189,25 +189,9 @@ export const DUMMY_STATIONS: ChargingStation[] = [
   },
 ]
 
-/**
- * Fetch stations from backend API and map to `ChargingStation`.
- * Falls back to `DUMMY_STATIONS` on error.
- */
 export async function fetchStations(): Promise<ChargingStation[]> {
   try {
-    console.log("fetchStations: requesting http://localhost:8080/api/stations")
-    const res = await fetch("http://localhost:8080/api/stations", {
-      cache: "no-store",
-    })
-
-    console.log("fetchStations: response status", res.status)
-
-    if (!res.ok) {
-      throw new Error(`API responded with status ${res.status}`)
-    }
-
-    const data = await res.json()
-    console.log("fetchStations: raw payload type", typeof data)
+    const data = await fetchStationsApi()
 
     if (!Array.isArray(data)) {
       throw new Error("Invalid stations payload")
@@ -228,10 +212,8 @@ export async function fetchStations(): Promise<ChargingStation[]> {
       pricePerKwh: Number(item.pricePerKwh ?? 0),
     }))
 
-    console.log(`fetchStations: mapped ${mapped.length} stations`, mapped[0] ?? null)
     return mapped
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error("fetchStations(): failed to load stations, using dummy data", err)
     return DUMMY_STATIONS
   }
